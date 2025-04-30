@@ -1,13 +1,13 @@
 package user.controller;
 
 import javax.ejb.EJB;
+//import javax.ejb.EJB;
 import javax.ejb.Stateless;
-import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
 import user.entity.userEntity;
-import user.interfaces.services.IService;
+import user.interfaces.services.IAuthService;
 
 @Path("/user")
 @Stateless
@@ -16,17 +16,22 @@ import user.interfaces.services.IService;
 public class userController {
 
 	@EJB
-	IService service;               
+	IAuthService<userEntity> service;               
 
    @POST
    @Path("/register")
    public Response register(userEntity user) {
-       return service.createUser(user);
+       return service.register(user);
     }
+   
+   
+   @PUT
+   @Path("/login")
+   public Response login(userEntity user) {
+	   return service.login(user);
+   }
+   
+   
 
-    @GET
-    @Path("/test")
-    public String test() {
-        return "Test";
-    }
+   
 }

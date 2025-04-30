@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 
 import user.entity.userEntity;
@@ -21,8 +22,7 @@ public class userDatabaseManager implements IuserRepository {
 
 	@Override
 	public void save(userEntity user) {
-		em.persist(user);
-		
+		em.persist(user);	
 	}
 
 	@Override
@@ -33,8 +33,11 @@ public class userDatabaseManager implements IuserRepository {
 
 	@Override
 	public userEntity findByEmail(String email) {
-		// TODO Auto-generated method stub
-		return null;
+		  try {
+		        return em.createQuery("SELECT u FROM userEntity u WHERE u.email = :email", userEntity.class).setParameter("email", email).getSingleResult();
+		    } catch (NoResultException e) {
+		        return null;
+		    }	
 	}
 
 	@Override

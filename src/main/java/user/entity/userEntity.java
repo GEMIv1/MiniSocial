@@ -20,7 +20,7 @@ public class userEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "user_id")
 	int userId;
-	@Column(nullable = false, unique = true)
+	@Column(name = "email", nullable = false, unique = true)
 	String email;
 	@Column(nullable = false)
 	String password;
