@@ -14,7 +14,7 @@ import user.entity.userEntity;
 public class likeEntity {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long likeId;
+    private int likeId;
 	
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "user_id", nullable = false)
@@ -23,6 +23,10 @@ public class likeEntity {
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "post_id", nullable = false)
     private postEntity post;
+
+	public void setUser(userEntity user2) {this.user = user2;}
+
+	public void setPost(postEntity post2) {this.post = post2;}
 	
     /*
     @Temporal(TemporalType.TIMESTAMP)

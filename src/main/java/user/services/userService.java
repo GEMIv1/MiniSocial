@@ -1,26 +1,24 @@
 package user.services;
 
-import java.awt.PageAttributes.MediaType;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import javax.ejb.Local;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
-import user.interfaces.services.IAuthService;
 import user.interfaces.services.IUserService;
+
 
 @Stateless
 @Local(IUserService.class)
@@ -59,8 +57,14 @@ public class userService implements IUserService{
         
         userDatabaseManager.save(toUpdate);
         
+        Map<String,Object> result = new HashMap<>();
+        result.put("id",    toUpdate.getId());
+        result.put("name",  toUpdate.getName());
+        result.put("email", toUpdate.getEmail());
+        result.put("bio",   Optional.ofNullable(toUpdate.getBio()).orElse(""));
         
-        return Response.ok(toUpdate).build();
+        return Response.ok(result).build();
+
 	}
 
 	@Override

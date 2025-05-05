@@ -25,6 +25,13 @@ public class commentEntity {
     @JoinColumn(name = "post_id", nullable = false)
     private postEntity post;
     
+    public void setPost(postEntity post) {this.post = post;}
+    public postEntity getComment() {return post;}
+    public void setAuthor(userEntity author) {this.author = author;}
+    public userEntity getAuthor() {return author;}
+    public void setContent(String content) {this.content = content;}
+    public String getContent() {return content;}
+    
     /*
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)

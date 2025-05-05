@@ -33,8 +33,7 @@ public class groupEntity {
 	@ManyToMany(mappedBy = "groups")
 	List<userEntity> users = new ArrayList<>();
 	
-	@OneToMany()
-	@JoinColumn(name = "postId")
+	@OneToMany(mappedBy = "group")
 	List<postEntity> grpPosts = new ArrayList<>();
 	
 	@OneToMany(mappedBy = "group")

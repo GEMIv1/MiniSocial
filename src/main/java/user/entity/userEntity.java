@@ -77,7 +77,7 @@ public class userEntity {
 	public List<friendRequestEntity> getFriendRequestRecieved(){return this.friendRequestRecieved;}
 	public List<friendRequestEntity> getfriendRequestSent(){return this.friendRequestSent;}
 	public List<userEntity> getFriends(){return this.friends;}
+	public List<postEntity> getPosts() {return this.posts;}
 
 	
-
 }

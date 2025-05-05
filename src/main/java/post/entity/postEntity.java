@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.persistence.*;
 
+import group.entity.groupEntity;
 import user.entity.userEntity;
 
 @Entity
@@ -14,7 +15,7 @@ public class postEntity {
 	
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long postId;
+    private int postId;
 	
 	@Column(nullable = false)
     private String content;
@@ -29,6 +30,33 @@ public class postEntity {
 	
     @OneToMany(mappedBy = "post")
     private List<likeEntity> likes = new ArrayList<>();
+    
+    @ManyToOne()
+    @JoinColumn(name = "group_id")
+    private groupEntity group;
+    
+    public void setAuthor(userEntity author) {this.author = author;}
+    
+    public userEntity getAuthor() {
+        return author;
+    }
+    
+    public int getPostId() {
+        return postId;
+    }
+
+    public String getContent() {
+        return content;
+    }
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+	public List<commentEntity> getComments() {
+		return comments;
+	}
+
+    
     
     
     /*
