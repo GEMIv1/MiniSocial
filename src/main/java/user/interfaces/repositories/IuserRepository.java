@@ -2,19 +2,25 @@ package user.interfaces.repositories;
 
 import java.util.List;
 
+import user.entity.friendRequestEntity;
 import user.entity.userEntity;
 
 public interface IuserRepository {
 
-    void save(userEntity user);
+    public void save(userEntity user);
 
-    userEntity findById(int id);
+    public userEntity findById(int id);
 
-    userEntity findByEmail(String email);
+    public userEntity findByEmail(String email);
 
-    List<userEntity> findAll();
+    public List<userEntity> findAll();
 
-    void update(userEntity user);
+    public void update(userEntity user);
 
-    void delete(userEntity user);
+    public void delete(userEntity user);
+    	
+	public void addNewFriend(int userId, int newFriendId);
+	
+	public List<userEntity> getAllFriend(int id);
+
 }

@@ -29,10 +29,10 @@ public class userEntity {
 	@Enumerated(EnumType.STRING)
 	Role role;
 	
-	@OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "author")
 	List<postEntity> posts = new ArrayList<>();
 	
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany()
     @JoinTable(
         name = "user_friends",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -40,26 +40,26 @@ public class userEntity {
     )
 	List<userEntity> friends = new ArrayList<>();
 		
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany()
 	@JoinTable(name = "user_groups", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "group_id"))
 	List<groupEntity> groups = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "receiver", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "receiver")
 	List<friendRequestEntity> friendRequestRecieved = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "sender")
 	List<friendRequestEntity> friendRequestSent = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "creator")
 	List<groupEntity> groupsCreated = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "author")
 	List<commentEntity> comments = new ArrayList<>();
 
-	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "user")
 	List<likeEntity> likes = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "user")
 	private List<requestEntity> requests = new ArrayList<>();
 
 	
@@ -73,6 +73,11 @@ public class userEntity {
 	public void   setBio(String bio) { this.bio = bio; }
 	public Role   getRole() { return role; }
 	public void   setRole(Role role) { this.role = role; }
+	public int getId() {return this.userId;}
+	public List<friendRequestEntity> getFriendRequestRecieved(){return this.friendRequestRecieved;}
+	public List<friendRequestEntity> getfriendRequestSent(){return this.friendRequestSent;}
+	public List<userEntity> getFriends(){return this.friends;}
+
 	
 
 }

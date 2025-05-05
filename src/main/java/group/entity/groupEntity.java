@@ -26,14 +26,14 @@ public class groupEntity {
 	@Column(name = "is_open")
     private boolean open;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne()
     @JoinColumn(name = "creator_id")
     private userEntity creator;
 	
 	@ManyToMany(mappedBy = "groups")
 	List<userEntity> users = new ArrayList<>();
 	
-	@OneToMany(fetch = FetchType.LAZY)
+	@OneToMany()
 	@JoinColumn(name = "postId")
 	List<postEntity> grpPosts = new ArrayList<>();
 	

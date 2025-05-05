@@ -7,6 +7,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 
+import user.entity.friendRequestEntity;
 import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
 
@@ -27,8 +28,14 @@ public class userDatabaseManager implements IuserRepository {
 
 	@Override
 	public userEntity findById(int id) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		try {
+			return em.createQuery("select u from userEntity u where u.id = :id", userEntity.class).setParameter("id", id).getSingleResult();
+			
+		}catch(NoResultException e) {
+			System.out.print(e.getMessage());
+			return null;
+		}
 	}
 
 	@Override
@@ -36,6 +43,7 @@ public class userDatabaseManager implements IuserRepository {
 		  try {
 		        return em.createQuery("SELECT u FROM userEntity u WHERE u.email = :email", userEntity.class).setParameter("email", email).getSingleResult();
 		    } catch (NoResultException e) {
+				System.out.print(e.getMessage());
 		        return null;
 		    }	
 	}
@@ -55,6 +63,23 @@ public class userDatabaseManager implements IuserRepository {
 	public void delete(userEntity user) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	@Override
+    public void addNewFriend(int userId, int newFriendId) {
+        em.createNativeQuery(
+            "INSERT INTO user_friends (user_id, friend_id) VALUES (:uid, :fid)")
+          .setParameter("uid", userId)
+          .setParameter("fid", newFriendId)
+          .executeUpdate();
+    }
+
+	public List<userEntity> getAllFriend(int id) {
+	    return em.createQuery(
+	        "SELECT f FROM userEntity u JOIN u.friends f WHERE u.id = :id",
+	        userEntity.class)
+	      .setParameter("id", id)
+	      .getResultList();
 	}
 
 }

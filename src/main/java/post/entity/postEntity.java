@@ -20,14 +20,14 @@ public class postEntity {
     private String content;
 	
   
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne()
 	@JoinColumn(name = "author_id")
 	private userEntity author;
 	
-	@OneToMany(mappedBy = "post", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "post")
 	private List<commentEntity> comments = new ArrayList<>();
 	
-    @OneToMany(mappedBy = "post",fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "post")
     private List<likeEntity> likes = new ArrayList<>();
     
     
