@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns="urn:jboss:module:1.9" name="com.microsoft.sqlserver">
+  <resources>
+    <!-- only the Java 11–compatible driver -->
+    <resource-root path="mssql-jdbc-12.10.0.jre11.jar"/>
+	<resource-root path="mssql-jdbc-12.10.0.jre8.jar"/>
+  </resources>
+  <dependencies>
+    <module name="javax.api"/>
+    <module name="javax.transaction.api"/>
+  </dependencies>
+</module>
