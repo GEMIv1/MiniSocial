@@ -1,9 +1,11 @@
 package post.services;
 
 import java.util.List;      
-import java.util.Map;       
+import java.util.Map;
+import java.util.Set;
 import java.util.ArrayList;
-import java.util.HashMap;   
+import java.util.HashMap;
+import java.util.HashSet;
 
 import javax.ejb.Local;
 import javax.ejb.Stateless;
@@ -12,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Response;
 
+import group.entity.groupEntity;
 import post.entity.commentEntity;
 import post.entity.likeEntity;
 import post.entity.postEntity;
@@ -110,62 +113,95 @@ public class postEngagementService implements IPostEngagementService{
 
 	@Override
 	public Response viewTimeLine(HttpServletRequest request) {
-		
-		HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                           .entity("User is not authenticated.")
-                           .build();
-        }
+	    HttpSession session = request.getSession(false);
+	    if (session == null || session.getAttribute("userId") == null) {
+	        return Response.status(Response.Status.UNAUTHORIZED)
+	                       .entity("User is not authenticated.")
+	                       .build();
+	    }
 
-        int userId = (Integer) session.getAttribute("userId");
-        userEntity currUser = userDatabaseManager.findById(userId);
-        
-        List<userEntity> currUserFriends = currUser.getFriends();
-        List<Map<String, Object>> timeLine = new ArrayList<>();
+	    int userId = (Integer) session.getAttribute("userId");
+	    userEntity currUser = userDatabaseManager.findById(userId);
+	    if (currUser == null) {
+	        return Response.status(Response.Status.BAD_REQUEST)
+	                       .entity("Invalid user.")
+	                       .build();
+	    }
 
-        for (userEntity friend : currUserFriends) {
-            List<postEntity> posts = friend.getPosts();
-            
-            HashMap<String, Object> entry = new HashMap<>();
-            entry.put("FriendName", friend.getName());
-            
-            List<Map<String, Object>> postSummaries = new ArrayList<>();
-            if(postSummaries.size() <= 0) {
-	            for (postEntity post : posts) {
-	                Map<String, Object> postData = new HashMap<>();
-	                
-	                postData.put("Content", post.getContent());
-	                
-	                long likeCount = likeDatabaseManager.countLikesByPost(post);
-	                postData.put("Likes", likeCount+"");
-	                
-	                List<commentEntity> comments = post.getComments();
-	                List<Map<String, Object>> commentSummaries = new ArrayList<>();
-	                
-	                for (commentEntity comment : comments) {
-	                    Map<String, Object> commentData = new HashMap<>();
-	                    commentData.put("Author", comment.getAuthor().getName());
-	                    commentData.put("Content", comment.getContent());
-	                    commentSummaries.add(commentData);
-	                }
-	                
-	                postData.put("Comments", commentSummaries);
-	                
-	                
-	                postSummaries.add(postData);
-	                
-	                
+	    Set<Integer> seenPostIds = new HashSet<>();
+	    List<Map<String, Object>> timeLine = new ArrayList<>();
+
+	    for (groupEntity grp : currUser.getGroups()) {
+	        List<Map<String, Object>> postSummaries = new ArrayList<>();
+
+	        for (postEntity post : grp.getAllPostsInGrp()) {
+	            if (!seenPostIds.add(post.getPostId())) continue;
+
+	            Map<String, Object> postData = new HashMap<>();
+	            postData.put("writer", post.getAuthor().getName());
+	            postData.put("content", post.getContent());
+	            postData.put("groupName", grp.getName());
+
+	            long likeCount = likeDatabaseManager.countLikesByPost(post);
+	            postData.put("likes", likeCount);
+
+	            List<Map<String, Object>> commentSummaries = new ArrayList<>();
+	            for (commentEntity comment : post.getComments()) {
+	                Map<String, Object> commentData = new HashMap<>();
+	                commentData.put("author", comment.getAuthor().getName());
+	                commentData.put("content", comment.getContent());
+	                commentSummaries.add(commentData);
 	            }
-	            
-	            
-	            entry.put("Posts", postSummaries);
+	            postData.put("comments", commentSummaries);
+
+	            postSummaries.add(postData);
+	        }
+
+	        if (!postSummaries.isEmpty()) {
+	            Map<String, Object> entry = new HashMap<>();
+	            entry.put("groupName", grp.getName());
+	            entry.put("posts", postSummaries);
 	            timeLine.add(entry);
 	        }
-        }
-        
-        return Response.ok(timeLine).build();
-		
+	    }
+
+	    for (userEntity friend : currUser.getFriends()) {
+	        List<Map<String, Object>> postSummaries = new ArrayList<>();
+
+	        for (postEntity post : friend.getPosts()) {
+	            if (!seenPostIds.add(post.getPostId())) continue;
+
+	            Map<String, Object> postData = new HashMap<>();
+	            postData.put("writer", post.getAuthor().getName());
+	            postData.put("content", post.getContent());
+	            postData.put("friendName", friend.getName());
+
+	            long likeCount = likeDatabaseManager.countLikesByPost(post);
+	            postData.put("likes", likeCount);
+
+	            List<Map<String, Object>> commentSummaries = new ArrayList<>();
+	            for (commentEntity comment : post.getComments()) {
+	                Map<String, Object> commentData = new HashMap<>();
+	                commentData.put("author", comment.getAuthor().getName());
+	                commentData.put("content", comment.getContent());
+	                commentSummaries.add(commentData);
+	            }
+	            postData.put("comments", commentSummaries);
+
+	            postSummaries.add(postData);
+	        }
+
+	        if (!postSummaries.isEmpty()) {
+	            Map<String, Object> entry = new HashMap<>();
+	            entry.put("friendName", friend.getName());
+	            entry.put("posts", postSummaries);
+	            timeLine.add(entry);
+	        }
+	    }
+	    
+
+
+	    return Response.ok(timeLine).build();
 	}
 
 }

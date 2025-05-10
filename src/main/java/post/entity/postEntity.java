@@ -21,17 +21,17 @@ public class postEntity {
     private String content;
 	
   
-	@ManyToOne()
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "author_id")
 	private userEntity author;
 	
-	@OneToMany(mappedBy = "post")
+	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
 	private List<commentEntity> comments = new ArrayList<>();
 	
-    @OneToMany(mappedBy = "post")
+    @OneToMany(mappedBy = "post",  cascade =  CascadeType.ALL)
     private List<likeEntity> likes = new ArrayList<>();
     
-    @ManyToOne()
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private groupEntity group;
     
@@ -54,6 +54,13 @@ public class postEntity {
 
 	public List<commentEntity> getComments() {
 		return comments;
+	}
+	public groupEntity getGroup() {
+		 return group;
+	}
+
+	public void setGroup(groupEntity group) {
+		this.group = group;
 	}
 
     

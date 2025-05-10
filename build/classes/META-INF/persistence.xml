@@ -2,14 +2,31 @@
 <persistence version="2.1"
              xmlns="http://xmlns.jcp.org/xml/ns/persistence"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence 
+                                 http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
+
     <persistence-unit name="hello" transaction-type="JTA">
-        <jta-data-source>java:jboss/datasources/ExampleDS</jta-data-source>
+        <!-- switch from ExampleDS to your MSSQL datasource JNDI -->
+        <jta-data-source>java:/jdbc/MyMSSQLDS</jta-data-source>
+        
+           <!--  <class>user.entity.userEntity</class>
+           <class>user.entity.friendRequestEntity</class>
+           <class>group.entity.groupEntity</class>
+           <class>group.entity.requestEntity</class>
+           <class>post.entity.commentEntity</class>
+           <class>post.entity.likeEntity</class>
+           <class>post.entity.postEntity</class>
+           -->
+           
+        
+
         <properties>
-    			<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect" />
-    			<property name="hibernate.hbm2ddl.auto" value="create-drop" />
-    			<property name="hibernate.show_sql" value="true" />
-    			<property name="hibernate.format_sql" value="true" />
-	</properties>
+				<property name="hibernate.dialect" value="org.hibernate.dialect.SQLServer2012Dialect"/>
+          		<property name="hibernate.hbm2ddl.auto" value="update"/>
+			    <property name="hibernate.show_sql"     value="true"/>
+			    <property name="hibernate.format_sql"   value="true"/>
+		    
+            
+        </properties>
     </persistence-unit>
 </persistence>

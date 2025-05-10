@@ -22,11 +22,13 @@ public class friendRequestEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 	
-    @ManyToOne()
-    @JoinColumn(name = "sender", nullable = false)
+
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "sender", nullable = false)
     private userEntity sender;
     
-    @ManyToOne()
+
+    @ManyToOne(optional = false)  
     @JoinColumn(name = "receiver", nullable = false)
     private userEntity receiver;
     

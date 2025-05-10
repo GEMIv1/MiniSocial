@@ -16,11 +16,11 @@ public class likeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int likeId;
 	
-	@ManyToOne(optional = false)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "user_id", nullable = false)
     private userEntity user;
 	
-	@ManyToOne(optional = false)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "post_id", nullable = false)
     private postEntity post;
 

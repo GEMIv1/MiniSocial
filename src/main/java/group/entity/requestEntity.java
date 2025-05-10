@@ -5,19 +5,13 @@ import javax.persistence.*;
 import user.entity.userEntity;
 
 
-
-
-enum RequestStatus {
-    PENDING, APPROVED, REJECTED;
-}
-
 @Entity
 @Table(name = "requests")
 public class requestEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long requestId;
+    private int requestId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)

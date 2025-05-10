@@ -32,7 +32,7 @@ public class userEntity {
 	@OneToMany(mappedBy = "author")
 	List<postEntity> posts = new ArrayList<>();
 	
-	@ManyToMany()
+	@ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_friends",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -40,7 +40,7 @@ public class userEntity {
     )
 	List<userEntity> friends = new ArrayList<>();
 		
-	@ManyToMany()
+	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "user_groups", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "group_id"))
 	List<groupEntity> groups = new ArrayList<>();
 	
@@ -78,6 +78,6 @@ public class userEntity {
 	public List<friendRequestEntity> getfriendRequestSent(){return this.friendRequestSent;}
 	public List<userEntity> getFriends(){return this.friends;}
 	public List<postEntity> getPosts() {return this.posts;}
-
+	public List<groupEntity> getGroups(){return this.groups;}
 	
 }

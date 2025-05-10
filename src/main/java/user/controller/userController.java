@@ -30,6 +30,8 @@ public class userController {
 	IAuthService<userEntity> Authservice;
 	@EJB
 	IUserService UserInfoService;
+	@EJB
+	IuserRepository userRepository;
 
 
 
@@ -63,6 +65,13 @@ public class userController {
 	public Response getAllFriends() {
 		return UserInfoService.viewConnections(servletRequest);
 	}
+   	
+   	@GET
+   	@Path("/getAllGroups/{id}")
+   	public Response getAllGroups(@PathParam("id") int targetId) {
+   		userEntity usr = userRepository.findById(targetId);
+   		return Response.ok(usr.getFriends()).build();
+   	}
   
    
    

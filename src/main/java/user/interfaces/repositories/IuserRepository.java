@@ -2,6 +2,7 @@ package user.interfaces.repositories;
 
 import java.util.List;
 
+import group.entity.groupEntity;
 import user.entity.friendRequestEntity;
 import user.entity.userEntity;
 
@@ -22,5 +23,11 @@ public interface IuserRepository {
 	public void addNewFriend(int userId, int newFriendId);
 	
 	public List<userEntity> getAllFriend(int id);
+
+	public void removeGroupFromUser(int userId, int groupId);
+
+	public List<groupEntity> getAllUserGrps(int userId);
+
+	void addUserToGroupNative(int userId, int groupId);
 
 }
