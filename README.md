@@ -1,3 +1,1 @@
-## MiniSocial
-
-back-end project with JAVA EE and JAX-RS restful API
+## This is the setup files need to make the database persistence using Microsoft SQL server
