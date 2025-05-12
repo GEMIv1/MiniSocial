@@ -1,17 +1,12 @@
 package user.entity;
-
 import java.util.*;
-
 import javax.persistence.*;
-
 import group.entity.groupEntity;
 import group.entity.requestEntity;
+import notifications.entity.notificationEntity;
 import post.entity.commentEntity;
 import post.entity.likeEntity;
 import post.entity.postEntity;
-
-enum Role {USER, ADMIN}
-
 @Entity
 @Table(name="users")
 public class userEntity {
@@ -29,7 +24,7 @@ public class userEntity {
 	@Enumerated(EnumType.STRING)
 	Role role;
 	
-	@OneToMany(mappedBy = "author")
+	@OneToMany(mappedBy = "author", cascade = CascadeType.REMOVE)
 	List<postEntity> posts = new ArrayList<>();
 	
 	@ManyToMany(fetch = FetchType.LAZY)
@@ -39,29 +34,35 @@ public class userEntity {
         inverseJoinColumns = @JoinColumn(name = "friend_id")
     )
 	List<userEntity> friends = new ArrayList<>();
+	
+	@ManyToMany(mappedBy = "friends")
+    private List<userEntity> friendOf = new ArrayList<>();
 		
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "user_groups", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "group_id"))
 	List<groupEntity> groups = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "receiver")
+	@OneToMany(mappedBy = "receiver", cascade = CascadeType.REMOVE)
 	List<friendRequestEntity> friendRequestRecieved = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "sender")
+	@OneToMany(mappedBy = "sender", cascade = CascadeType.REMOVE)
 	List<friendRequestEntity> friendRequestSent = new ArrayList<>();
 	
 	@OneToMany(mappedBy = "creator")
 	List<groupEntity> groupsCreated = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "author")
+	@OneToMany(mappedBy = "author", cascade = CascadeType.REMOVE)
 	List<commentEntity> comments = new ArrayList<>();
-
-	@OneToMany(mappedBy = "user")
+	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
 	List<likeEntity> likes = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "user")
+	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
 	private List<requestEntity> requests = new ArrayList<>();
-
+	
+    @OneToMany(mappedBy = "recipient", cascade = CascadeType.REMOVE)
+    private List<notificationEntity> notificationsReceived = new ArrayList<>();
+    @OneToMany(mappedBy = "actor", cascade = CascadeType.REMOVE)
+    private List<notificationEntity> notificationsSent = new ArrayList<>();
 	
 	public String getEmail() { return email; }
 	public void   setEmail(String email) { this.email = email; }
@@ -79,5 +80,6 @@ public class userEntity {
 	public List<userEntity> getFriends(){return this.friends;}
 	public List<postEntity> getPosts() {return this.posts;}
 	public List<groupEntity> getGroups(){return this.groups;}
-	
+	public List<userEntity> getFriendOf() {return this.friendOf;}
+	public List<groupEntity> getGroupsCreated(){return this.groupsCreated;}
 }

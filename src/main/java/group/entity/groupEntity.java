@@ -26,17 +26,17 @@ public class groupEntity {
 	@Column(name = "is_open", nullable = false ,columnDefinition = "bit default 0 not null")
     private boolean open;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "creator_id")
     private userEntity creator;
 	
 	@ManyToMany(mappedBy = "groups")
 	List<userEntity> users = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "group")
+	@OneToMany(mappedBy = "group", cascade = CascadeType.REMOVE)
 	List<postEntity> grpPosts = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "group")
+	@OneToMany(mappedBy = "group", cascade = CascadeType.REMOVE)
 	private List<requestEntity> requests = new ArrayList<>();
 	
 	

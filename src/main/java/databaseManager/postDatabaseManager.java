@@ -35,9 +35,12 @@ public class postDatabaseManager implements IPostRepository{
 
 	@Override
 	public int delete(int postId) {
-		return em.createQuery("DELETE FROM postEntity p WHERE p.postId = :id")
-                .setParameter("id", postId)
-                .executeUpdate();
+		postEntity p = em.find(postEntity.class, postId);
+	    if (p == null) {
+	        return 0;
+	    }
+	    em.remove(p);
+	    return 1;
    }
 
 	@Override

@@ -10,9 +10,11 @@ import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Response;
 
 import group.entity.groupEntity;
+import group.entity.requestEntity;
 import group.interfaces.repositories.IGroupRepository;
 import group.interfaces.repositories.IRequestRepository;
 import group.interfaces.services.IGroupAdminService;
+import user.entity.Role;
 import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
 
@@ -157,24 +159,27 @@ public class groupAdminService implements IGroupAdminService {
 	            return Response.status(Response.Status.NOT_FOUND)
 	                           .entity("Group not found or author is null.").build();
 	        }
-		    if (author.getId() != userId) {
-	            return Response.status(Response.Status.UNAUTHORIZED)
-	                           .entity("You are not the group admin.").build();
-	        }
-	        groupDatabaseManager.removeAllGroupMembers(grpId);
-	        groupDatabaseManager.deleteAllGroupPosts(grpId);
-		    int rows = groupDatabaseManager.deleteGroup(grpId);
+		    if (author.getId() == userId || user.getRole() == Role.ADMIN) {
+		    	groupDatabaseManager.removeAllGroupMembers(grpId);
+		        groupDatabaseManager.deleteAllGroupPosts(grpId);
+			    int rows = groupDatabaseManager.deleteGroup(grpId);
 
-		    if (rows == 0) {
-		        return Response.status(Response.Status.NOT_FOUND).entity("").build();
-		    }
+			    if (rows == 0) {
+			        return Response.status(Response.Status.NOT_FOUND).entity("").build();
+			    }
+				return Response.ok().entity("Group deleted successfully!!").build();
+
+	        }
+		   
+	        
 
 			
 		}
 		catch(Exception e) {
 			return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Error while deleting the group").build();
 		}
-		return Response.ok().entity("Group deleted successfully!!").build();
+		return Response.status(Response.Status.UNAUTHORIZED)
+                .entity("You are not the group admin.").build();
 	}
 
 
@@ -224,59 +229,37 @@ public class groupAdminService implements IGroupAdminService {
 	public Response acceptMemeberInGrp(int grpId, int usrId, HttpServletRequest req) {
 		HttpSession session = req.getSession(false);
 	    if (session == null || session.getAttribute("userId") == null) {
-	        return Response.status(Response.Status.UNAUTHORIZED)
-	                       .entity("User not authenticated.")
-	                       .build();
+	        return Response.status(Response.Status.UNAUTHORIZED).entity("User not authenticated.").build();
 	    }
 
 	    int adminId = (Integer) session.getAttribute("userId");
 	    userEntity admin = userDatabaseManager.findById(adminId);
 	    if (admin == null) {
-	        return Response.status(Response.Status.NOT_FOUND)
-	                       .entity("Admin user not found.")
-	                       .build();
+	        return Response.status(Response.Status.NOT_FOUND).entity("Admin user not found.").build();
 	    }
 
 	    groupEntity group = groupDatabaseManager.getGroupById(grpId);
 	    if (group == null) {
-	        return Response.status(Response.Status.NOT_FOUND)
-	                       .entity("Group not found.")
-	                       .build();
+	        return Response.status(Response.Status.NOT_FOUND).entity("Group not found.").build();
 	    }
 
-	    // Only the group’s author/admin may accept members:
 	    if (group.getCreator().getId() != adminId) {
-	        return Response.status(Response.Status.FORBIDDEN)
-	                       .entity("You are not the group admin.")
-	                       .build();
+	        return Response.status(Response.Status.FORBIDDEN).entity("You are not the group admin.").build();
 	    }
 
 	    userEntity toAccept = userDatabaseManager.findById(usrId);
 	    if (toAccept == null) {
-	        return Response.status(Response.Status.NOT_FOUND)
-	                       .entity("User to accept not found.")
-	                       .build();
+	        return Response.status(Response.Status.NOT_FOUND).entity("User to accept not found.").build();
 	    }
 
-	    // Optional: check they actually requested to join
-	    if (!group.getAllRequestsInGrp().contains(toAccept)) {
-	        return Response.status(Response.Status.BAD_REQUEST)
-	                       .entity("This user has not requested to join.")
-	                       .build();
+	    boolean IsReq = requestDatabaseManager.existsPendingRequest(usrId, grpId);
+	    if(!IsReq) {
+	    	return Response.status(Response.Status.NOT_FOUND).entity("There is no pending requests by this user.").build();
 	    }
 
-	    // 1) Persist the membership
-	    groupDatabaseManager.addUserInGrp(usrId, grpId);
-	    requestDatabaseManager.updateReqAccepted(usrId, grpId);
+	
 
-	    // 3) Update in‑memory collections
-	    group.getAllUsrInGrp().add(toAccept);
-	    toAccept.getGroups().add(group);
-	    group.getAllRequestsInGrp().remove(toAccept);
-
-	    return Response.ok()
-	                   .entity("User " + toAccept.getName() + " has been accepted into " + group.getName())
-	                   .build();
+	    return Response.ok().entity("User " + toAccept.getName() + " has been accepted into " + group.getName()).build();
 	}
 	
 	@Override
@@ -303,7 +286,6 @@ public class groupAdminService implements IGroupAdminService {
 	                       .build();
 	    }
 
-	    // only the group’s creator/admin may reject requests
 	    if (group.getCreator().getId() != adminId) {
 	        return Response.status(Response.Status.FORBIDDEN)
 	                       .entity("You are not the group admin.")
@@ -317,21 +299,15 @@ public class groupAdminService implements IGroupAdminService {
 	                       .build();
 	    }
 
-	    // ensure they actually requested to join
-	    if (!group.getAllRequestsInGrp().contains(toReject)) {
-	        return Response.status(Response.Status.BAD_REQUEST)
-	                       .entity("This user has not requested to join.")
-	                       .build();
+	    boolean IsReq = requestDatabaseManager.existsPendingRequest(usrId, grpId);
+	    if(!IsReq) {
+	    	return Response.status(Response.Status.NOT_FOUND).entity("There is no pending requests by this user.").build();
 	    }
 
-	    // 1) mark the request REJECTED
 	    int updated = requestDatabaseManager.updateReqReject(usrId, grpId);
 	    if (updated == 0) {
 	        return Response.status(Response.Status.BAD_GATEWAY).entity("Failed to update request status to REJECTED").build();
 	    }
-
-	    // 2) sync your in-memory collections
-	    group.getAllRequestsInGrp().remove(toReject);
 
 	    return Response.ok()
 	                   .entity("User " + toReject.getName()

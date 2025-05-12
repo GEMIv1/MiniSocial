@@ -1,6 +1,7 @@
 package user.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.ejb.EJB;
 //import javax.ejb.EJB;
@@ -16,6 +17,7 @@ import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
 import user.interfaces.services.IAuthService;
 import user.interfaces.services.IFriendRequsetService;
+import user.interfaces.services.ISearchService;
 import user.interfaces.services.IUserService;
 
 @Path("/user")
@@ -32,6 +34,8 @@ public class userController {
 	IUserService UserInfoService;
 	@EJB
 	IuserRepository userRepository;
+	@EJB
+	ISearchService searchService;
 
 
 
@@ -72,6 +76,20 @@ public class userController {
    		userEntity usr = userRepository.findById(targetId);
    		return Response.ok(usr.getFriends()).build();
    	}
+   	
+   	@GET
+   	@Path("/getAllNotifications")
+   	public Response getAllNotifications() {
+   		return Response.ok(UserInfoService.getAllNotifications(servletRequest)).build();
+   	}
+   	
+   	@GET
+   	@Path("/getFriendSuggestions/{limit}")
+   	public List<Map<String, Object>> getFriendSuggestions(@PathParam("limit") int limit) {
+   		return searchService.getFriendSuggestions(servletRequest, limit);
+   	}
+   	
+   	
   
    
    

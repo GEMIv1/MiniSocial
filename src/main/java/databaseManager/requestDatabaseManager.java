@@ -38,7 +38,7 @@ public class requestDatabaseManager implements IRequestRepository{
 		        "SET r.status = :status " +
 		        "WHERE r.user.id = :uid AND r.group.id = :gid"
 		    )
-		    .setParameter("status", RequestStatus.REJECTED.name())   
+		    .setParameter("status", RequestStatus.REJECTED)   
 		    .setParameter("uid",    userId)                   
 		    .setParameter("gid",    grpId)         
 		    .executeUpdate();             
@@ -46,17 +46,17 @@ public class requestDatabaseManager implements IRequestRepository{
 	
 	@Override
 	public int updateReqAccepted(int userId, int grpId) {
-		return em.createQuery(
-		        "UPDATE requestEntity r " +
-		        "SET r.status = :status " +
-		        "WHERE r.user.id = :uid AND r.group.id = :gid"
-		    )
-		    .setParameter("status", RequestStatus.APPROVED.name())   
-		    .setParameter("uid",    userId)                   
-		    .setParameter("gid",    grpId)         
-		    .executeUpdate();             
-	}
-
+        return em.createQuery(
+                "UPDATE requestEntity r " +
+                "  SET r.status = :status " +
+                "WHERE r.user.userId  = :uid " +
+                "  AND r.group.groupId = :gid"
+            )
+            .setParameter("status", RequestStatus.APPROVED)
+            .setParameter("uid",    userId)
+            .setParameter("gid",    grpId)
+            .executeUpdate();
+    }
 	@Override
 	public boolean existsPendingRequest(int userId, int grpId) {
 	    Long count = em.createQuery(

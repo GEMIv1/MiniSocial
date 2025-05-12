@@ -41,8 +41,10 @@ public class likeDatabaseManager implements ILikeRepository {
 
 	@Override
 	public void delete(likeEntity existingLike) {
-		em.createQuery("DELETE FROM likeEntity l WHERE l = :like").setParameter("like", existingLike);
-		
+		likeEntity managed = em.contains(existingLike)
+                ? existingLike
+                : em.merge(existingLike);
+			em.remove(managed);
 	}
 
 

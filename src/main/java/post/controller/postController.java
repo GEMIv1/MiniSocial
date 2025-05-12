@@ -4,6 +4,7 @@ import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -63,6 +64,12 @@ public class postController {
 	@Path("/Comment/{postId}")
 	public Response comment(@PathParam("postId") int postId, String content) {
 		return postEngagement.comment(content, request, postId);
+	}
+	
+	@DELETE
+	@Path("/Delete/{postId}")
+	public Response delete(@PathParam("postId") int postId) {
+		return postManagmentService.delete(postId, request);
 	}
 	
 

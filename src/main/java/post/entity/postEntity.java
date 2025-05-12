@@ -21,17 +21,19 @@ public class postEntity {
     private String content;
 	
   
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne()
 	@JoinColumn(name = "author_id")
 	private userEntity author;
 	
-	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+	private String ImageUrl;
+	
+	@OneToMany(mappedBy = "post", cascade=CascadeType.REMOVE)
 	private List<commentEntity> comments = new ArrayList<>();
 	
-    @OneToMany(mappedBy = "post",  cascade =  CascadeType.ALL)
+    @OneToMany(mappedBy = "post",  cascade=CascadeType.REMOVE)
     private List<likeEntity> likes = new ArrayList<>();
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "group_id")
     private groupEntity group;
     
@@ -61,6 +63,14 @@ public class postEntity {
 
 	public void setGroup(groupEntity group) {
 		this.group = group;
+	}
+	
+	public void setUrl(String ulr) {
+		this.ImageUrl = ulr;
+	}
+	
+	public String getUrl() {
+		return this.ImageUrl;
 	}
 
     

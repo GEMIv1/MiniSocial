@@ -2,6 +2,7 @@ package group.service;
 
 import java.util.List;
 
+import javax.ejb.EJB;
 import javax.ejb.Local;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -14,6 +15,9 @@ import group.entity.requestEntity;
 import group.interfaces.repositories.IGroupRepository;
 import group.interfaces.repositories.IRequestRepository;
 import group.interfaces.services.IGroupEngagmentService;
+import notifications.interfaces.services.notificationProducer;
+import notifications.services.notificationJoinProducer;
+import notifications.services.notificationLeaveProducer;
 import post.entity.postEntity;
 import post.interfaces.repositories.IPostRepository;
 import post.interfaces.services.IPostEngagementService;
@@ -37,92 +41,112 @@ public class groupEngagmentService implements IGroupEngagmentService{
 	IPostManagmentService postManagmentService;
 	@Inject
 	IPostEngagementService postEngagmentService;
+	@EJB(beanName="joinProducer")
+	notificationProducer joinProducer;
+	@EJB(beanName="leaveProducer")
+	notificationProducer leaveProducer;
 
 	@Override
 	public Response join(HttpServletRequest servletReq, int grpId) {
 	    HttpSession session = servletReq.getSession(false);
 	    if (session == null || session.getAttribute("userId") == null) {
-	        return Response.status(Response.Status.UNAUTHORIZED)
-	                       .entity("User not authenticated.")
-	                       .build();
+	        return Response.status(Response.Status.UNAUTHORIZED).entity("User not authenticated.").build();
 	    }
 
 	    int userId = (Integer) session.getAttribute("userId");
 	    userEntity user = userDatabaseManager.findById(userId);
 	    if (user == null) {
-	        return Response.status(Response.Status.NOT_FOUND)
-	                       .entity("User not found.")
-	                       .build();
+	        return Response.status(Response.Status.NOT_FOUND).entity("User not found.").build();
 	    }
 
-	    // 1) Already a member?
-	    boolean isMember = user.getGroups()
-	                           .stream()
-	                           .anyMatch(g -> g.getGrpId() == grpId);
+	    boolean isMember = user.getGroups().stream().anyMatch(g -> g.getGrpId() == grpId);
 	    if (isMember) {
-	        return Response.status(Response.Status.BAD_REQUEST)
-	                       .entity("You are already a member of this group.")
-	                       .build();
+	        return Response.status(Response.Status.BAD_REQUEST).entity("You are already a member of this group.").build();
 	    }
 
 	    groupEntity grp = groupDatabaseManager.getGroupById(grpId);
 	    if (grp == null) {
-	        return Response.status(Response.Status.BAD_REQUEST)
-	                       .entity("Group does not exist.")
-	                       .build();
+	        return Response.status(Response.Status.BAD_REQUEST).entity("Group does not exist.").build();
 	    }
 
-	    // 2) Private group → must send (and dedupe) a request
 	    if (!grp.getGrpStatus()) {
 	        if (requestDatabaseManager.existsPendingRequest(userId, grpId)) {
-	            return Response.status(Response.Status.BAD_REQUEST)
-	                           .entity("You have already requested to join this group.")
-	                           .build();
+
+	            return Response.status(Response.Status.BAD_REQUEST).entity("You have already requested to join this group.").build();
 	        }
 	        requestDatabaseManager.createReq(userId, grpId);
-	        return Response.ok()
-	                       .entity("Request sent successfully!")
-	                       .build();
+	        joinProducer.notify(
+	        		grp.getCreator().getId(),
+	                userId,
+	                null,               
+	                grp.getGrpId()
+	            );
+
+	        return Response.ok().entity("Request sent successfully!").build();
 	    }
-
-	    // 3) Public group → auto‑join
+	    
 	    groupDatabaseManager.addUserInGrp(userId, grpId);
-
-	    // keep the in‑memory model in sync
-	    grp.getAllUsrInGrp().add(user);
-	    user.getGroups().add(grp);
-
-	    return Response.ok()
-	                   .entity("Welcome to " + grp.getName() + "!")
-	                   .build();
+	    
+	    joinProducer.notify(
+        		grp.getCreator().getId(),
+                userId,
+                null,               
+                grp.getGrpId()
+            );
+	    
+	    return Response.ok().entity("Welcome to " + grp.getName() + "!").build();
 	}
 
 	@Override
-	public Response leave(HttpServletRequest servletReq, int grpId) {
-		try {
-			HttpSession session = servletReq.getSession(false);
-		    if (session == null || session.getAttribute("userId") == null) {
-		        return Response.status(Response.Status.UNAUTHORIZED)
-		                      .entity("User not authenticated.").build();
-		    }
-		    int userId = (Integer) session.getAttribute("userId");
-		    userEntity usr = userDatabaseManager.findById(userId);
-		    
-		    groupDatabaseManager.removeUserInGrp(userId, grpId);
+	public Response leave(HttpServletRequest req, int grpId) {
+	    try {
+	        HttpSession session = req.getSession(false);
+	        if (session == null || session.getAttribute("userId") == null) {
+	            return Response.status(Response.Status.UNAUTHORIZED)
+	                           .entity("User not authenticated.")
+	                           .build();
+	        }
+	        int userId = (Integer) session.getAttribute("userId");
+	        userEntity user = userDatabaseManager.findById(userId);
+	        if (user == null) {
+	            return Response.status(Response.Status.BAD_REQUEST)
+	                           .entity("Invalid user.")
+	                           .build();
+	        }
 
-		    
-		    userDatabaseManager.removeGroupFromUser(userId, grpId);
-		    groupEntity grp = groupDatabaseManager.getGroupById(grpId);
-		    usr.getGroups().remove(grp);
-	        grp.getAllUsrInGrp().remove(usr);
-		    return Response.ok().entity("Leaving " + grp.getName() + "...").build(); 
-		    
-			
-		}catch(Exception e) {
-			return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Error while leaving the group").build();
-		}
+	        groupEntity grp = groupDatabaseManager.getGroupById(grpId);
+	        if (grp == null) {
+	            return Response.status(Response.Status.NOT_FOUND)
+	                           .entity("Group not found.")
+	                           .build();
+	        }
+
+	        if (!user.getGroups().contains(grp)) {
+	            return Response.status(Response.Status.FORBIDDEN)
+	                           .entity("You are not a member of group “" + grp.getName() + "”.")
+	                           .build();
+	        }
+
+	        groupDatabaseManager.removeUserInGrp(userId, grpId);
+	        userDatabaseManager.removeGroupFromUser(userId, grpId);
+
+	        leaveProducer.notify(
+	            grp.getCreator().getId(), 
+	            userId,                    
+	            null,                      
+	            grp.getGrpId()
+	        );
+
+	        return Response.ok()
+	                       .entity("You have left “" + grp.getName() + "”.")
+	                       .build();
+
+	    } catch (Exception e) {
+	        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+	                       .entity("Error while leaving the group.")
+	                       .build();
+	    }
 	}
-	
 //	@Override
 //	public Response createPost(postEntity newPost, int groupId, HttpServletRequest servlet) {
 //		try {

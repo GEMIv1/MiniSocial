@@ -2,6 +2,7 @@ package user.services;
 
 import java.util.List;
 
+import javax.ejb.EJB;
 import javax.ejb.Local;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -10,6 +11,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Response;
 
+import notifications.interfaces.services.notificationProducer;
+import notifications.services.notificationFriendReqProducer;
 import user.entity.RequestStatus;
 import user.entity.friendRequestEntity;
 import user.entity.userEntity;
@@ -27,6 +30,9 @@ public class friendRequestService implements IFriendRequsetService{
 	@Inject
 	IfriendRequestRepository friendRequestDatabaseManager;
 
+	@EJB(beanName="friendReqProducer")
+	notificationProducer friendReqProducer;
+	
 	@Override
 	public Response send(HttpServletRequest servlet, int toId) {
 		
@@ -61,6 +67,8 @@ public class friendRequestService implements IFriendRequsetService{
 		
 		
 		friendRequestDatabaseManager.save(new friendRequestEntity(currUser, toUser));
+		//public void notify(int recipientUserId, int actorId, int postId, int grpId, String content) {}
+		friendReqProducer.notify(toId, fromId, null , null);
 		
 	
 		return Response.status(Response.Status.ACCEPTED).entity("Friend request sent successfully.").build();
@@ -116,8 +124,7 @@ public class friendRequestService implements IFriendRequsetService{
 	    
 	    friendRequestEntity req = friendRequestDatabaseManager.findPendingRequest(fromId, currUserId);
 	    if (req == null) {
-	        return Response.status(Response.Status.NOT_FOUND)
-	                       .entity("No pending request found.").build();
+	        return Response.status(Response.Status.NOT_FOUND).entity("No pending request found.").build();
 	    }
 	    
 	    req.setStatus(RequestStatus.REJECTED);

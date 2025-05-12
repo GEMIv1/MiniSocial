@@ -19,6 +19,7 @@ import post.interfaces.services.IPostManagmentService;
 import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
 import user.interfaces.services.IUserService;
+import user.entity.*;
 
 
 @Stateless
@@ -78,26 +79,30 @@ public class postManagmentService implements IPostManagmentService {
                            .build();
         }
 
-        if (post.getAuthor().getId() != userId) {
-            return Response.status(Response.Status.FORBIDDEN)
-                           .entity("Not authorized to update this post.")
-                           .build();
+        if (post.getAuthor().getId() == userId || post.getAuthor().getRole() == Role.ADMIN) {
+        	
+        	postEntity updated = postDatabaseManager.updateContent(postId, newContent, userId);
+
+            Map<String, Object> responseMap = new HashMap<>();
+            responseMap.put("id", updated.getPostId());
+            responseMap.put("content", updated.getContent());
+
+            if (updated.getAuthor() != null) {
+                Map<String, Object> authorMap = new HashMap<>();
+                authorMap.put("id", updated.getAuthor().getId());
+                authorMap.put("username", updated.getAuthor().getName());
+                responseMap.put("author", authorMap);
+            }
+
+            return Response.ok(responseMap).build();
+            
         }
-
-        postEntity updated = postDatabaseManager.updateContent(postId, newContent, userId);
-
-        Map<String, Object> responseMap = new HashMap<>();
-        responseMap.put("id", updated.getPostId());
-        responseMap.put("content", updated.getContent());
-
-        if (updated.getAuthor() != null) {
-            Map<String, Object> authorMap = new HashMap<>();
-            authorMap.put("id", updated.getAuthor().getId());
-            authorMap.put("username", updated.getAuthor().getName());
-            responseMap.put("author", authorMap);
-        }
-
-        return Response.ok(responseMap).build();
+        
+        return Response.status(Response.Status.FORBIDDEN)
+                .entity("Not authorized to update this post.")
+                .build();
+        
+        
     }
 
 	@Override
@@ -118,16 +123,17 @@ public class postManagmentService implements IPostManagmentService {
                            .build();
         }
 
-        if (post.getAuthor().getId() != userId) {
-            return Response.status(Response.Status.FORBIDDEN)
-                           .entity("Not authorized to update this post.")
-                           .build();
+        if (post.getAuthor().getId() == userId || post.getAuthor().getRole() == Role.ADMIN) {
+        	postDatabaseManager.delete(postId);
+    		return Response.ok()
+                    .entity("Post deleted successfully!")
+                    .build();
         }
         
-		postDatabaseManager.delete(postId);
-		return Response.ok()
-                .entity("Post created successfully!")
-                .build();
+        return Response.status(Response.Status.FORBIDDEN)
+                       .entity("Not authorized to update this post.")
+                       .build();
+		
 	}
 
 

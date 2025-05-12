@@ -71,11 +71,11 @@ public class groupDatabaseManager implements IGroupRepository{
 	}
 
 	@Override
-	public userEntity getAuthor(int usrId) {
+	public userEntity getAuthor(int groupId) {
 		return em.createQuery(
-		          "SELECT u FROM userEntity u WHERE u.userId = :id",
+		          "SELECT g.creator FROM groupEntity g WHERE g.groupId = :gid",
 		          userEntity.class)
-		        .setParameter("id", usrId)
+		        .setParameter("gid", groupId)
 		        .getSingleResult();
 	}
 
@@ -103,9 +103,15 @@ public class groupDatabaseManager implements IGroupRepository{
 
 	@Override
 	public int deleteGroup(int grpId) {
-	
-	    return em.createQuery("DELETE FROM groupEntity g WHERE g.groupId = :id")
-	      .setParameter("id", grpId).executeUpdate();
+	    groupEntity g = em.find(groupEntity.class, grpId);
+	    if (g == null) {
+	        return 0;
+	    }
+
+	    g.getAllUsrInGrp().clear();
+
+	    em.remove(g);
+	    return 1;
 	}
 
 	@Override

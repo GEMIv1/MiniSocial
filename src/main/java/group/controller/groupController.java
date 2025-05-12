@@ -94,13 +94,13 @@ public class groupController {
 	@PUT
 	@Path("/acceptUser/{id}/{grpId}")
 	public Response accept(@PathParam("id") int id, @PathParam("grpId") int grpId) {
-		return groupManagmentService.acceptMemeberInGrp(id, grpId, servletRequest);
+		return groupManagmentService.acceptMemeberInGrp(grpId, id, servletRequest);
 	}
 	
 	@PUT
 	@Path("/rejectUser/{id}/{grpId}")
-	public Response reject(@PathParam("id") int id) {
-		return groupEngagmentService.leave(servletRequest, id);
+	public Response reject(@PathParam("id") int id, @PathParam("grpId") int grpId) {
+		return groupManagmentService.rejectMemeberInGrp(grpId, id, servletRequest);
 	}
 	
 	@DELETE
