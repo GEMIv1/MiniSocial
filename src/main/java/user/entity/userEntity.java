@@ -27,15 +27,16 @@ public class userEntity {
 	@OneToMany(mappedBy = "author", cascade = CascadeType.REMOVE)
 	List<postEntity> posts = new ArrayList<>();
 	
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany()
     @JoinTable(
         name = "user_friends",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "friend_id")
     )
+	
 	List<userEntity> friends = new ArrayList<>();
 	
-	@ManyToMany(mappedBy = "friends")
+	@ManyToMany(mappedBy = "friends", fetch = FetchType.EAGER)
     private List<userEntity> friendOf = new ArrayList<>();
 		
 	@ManyToMany(fetch = FetchType.LAZY)
@@ -82,4 +83,10 @@ public class userEntity {
 	public List<groupEntity> getGroups(){return this.groups;}
 	public List<userEntity> getFriendOf() {return this.friendOf;}
 	public List<groupEntity> getGroupsCreated(){return this.groupsCreated;}
+	public List<commentEntity> getComments(){return this.comments;}
+	public List<likeEntity> getLikes(){return this.likes;}
+	public List<notificationEntity> getNotificationSent(){return this.notificationsSent;}
+	public List<notificationEntity> getNotificationReceived(){return this.notificationsReceived;}
+	public List<requestEntity> getRequests(){return this.requests;}
+	
 }

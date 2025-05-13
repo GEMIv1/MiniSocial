@@ -17,7 +17,8 @@ public class notificationDatabaseManager implements INotificationRepository {
 	
 	@Override
 	public void save(notificationEntity notification) {
-		em.persist(notification);
+		em.merge(notification);
+		em.flush();
 	}
 	
 	@Override

@@ -3,6 +3,7 @@ package user.interfaces.services;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import user.entity.userEntity;
 

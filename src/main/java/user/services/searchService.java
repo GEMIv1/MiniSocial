@@ -10,11 +10,11 @@ import java.util.stream.Collectors;
 
 import javax.ejb.Local;
 import javax.ejb.Stateless;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
+import javax.inject.Inject;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import javax.ws.rs.core.Response;
 
 import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
@@ -24,69 +24,108 @@ import user.interfaces.services.ISearchService;
 @Local(ISearchService.class)
 public class searchService implements ISearchService {
     
-    @PersistenceContext
+    @Inject
     private IuserRepository userDatabaseManager;
     
     @Override
-    public List<userEntity> searchUsers(String searchTerm, HttpServletRequest servlet, int limit) {
-    	
-    	HttpSession Session = servlet.getSession(false);
-    	int currentUserId = (Integer) Session.getAttribute("userId");
-    	
-    	
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            return Collections.emptyList();
+    public Response searchUsers(String searchTerm, HttpServletRequest servlet, int limit) {
+        HttpSession session = servlet.getSession(false);
+        if (session == null || session.getAttribute("userId") == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                           .entity("User not authenticated")
+                           .build();
         }
-        
-        List<userEntity> results = userDatabaseManager.searchUsers(searchTerm.trim().toLowerCase(), currentUserId);
+        int currentUserId = (Integer) session.getAttribute("userId");
+
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            return Response.ok(Collections.emptyList()).build();
+        }
+
+        List<userEntity> results =
+            userDatabaseManager.searchUsers(searchTerm.trim().toLowerCase(), currentUserId);
 
         if (limit > 0 && results.size() > limit) {
-            return results.subList(0, limit);
+            results = results.subList(0, limit);
         }
         
-        return results;
+        List<Map<String,Object>> users = new ArrayList<>();
+        for (userEntity u : results) {
+            Map<String,Object> m = new HashMap<>();
+            m.put("id",    u.getId());
+            m.put("name",  u.getName());
+            m.put("email", u.getEmail());
+            m.put("friendCount", u.getFriends().size());
+            users.add(m);
+        }
+
+        Map<String,Object> resp = new HashMap<>();
+        resp.put("count", users.size());
+        resp.put("users", users);
+
+        return Response.ok(resp).build();
+
     }
-    
+
     @Override
-    public List<Map<String, Object>> getFriendSuggestions(HttpServletRequest servlet, int limit) {
-        
-    	HttpSession Session = servlet.getSession(false);
-    	int userId = (Integer) Session.getAttribute("userId");
-    	
-    	userEntity currentUser = userDatabaseManager.findById(userId);
+    public Response getFriendSuggestions(HttpServletRequest servlet, int limit) {
+        HttpSession session = servlet.getSession(false);
+        if (session == null || session.getAttribute("userId") == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                           .entity("User not authenticated")
+                           .build();
+        }
+        int userId = (Integer) session.getAttribute("userId");
+
+        userEntity currentUser = userDatabaseManager.findById(userId);
         if (currentUser == null) {
-            return Collections.emptyList();
+            return Response.ok(Collections.emptyList()).build();
         }
 
         List<userEntity> currentUserFriends = currentUser.getFriends();
         List<Integer> currentUserFriendIds = currentUserFriends.stream()
-                .map(userEntity::getId)
-                .collect(Collectors.toList());
+            .map(userEntity::getId)
+            .collect(Collectors.toList());
 
-        List<userEntity> potentialFriends = userDatabaseManager.findNonFriendUsers(userId, currentUserFriendIds);
+        List<userEntity> potentialFriends =
+            userDatabaseManager.findNonFriendUsers(userId, currentUserFriendIds);
+
         List<Map<String, Object>> suggestions = new ArrayList<>();
+        for (userEntity pf : potentialFriends) {
+            List<userEntity> mutual = findMutualFriends(currentUserFriends, pf.getFriends());
+            if (mutual.isEmpty()) continue;
 
-        for (userEntity potentialFriend : potentialFriends) {
-            List<userEntity> mutualFriends = findMutualFriends(currentUserFriends, potentialFriend.getFriends());
+            Map<String,Object> userMap = new HashMap<>();
+            userMap.put("id",       pf.getId());
+            userMap.put("name",     pf.getName());
+            userMap.put("email",    pf.getEmail());
 
-            if (!mutualFriends.isEmpty()) {
-                Map<String, Object> suggestion = new HashMap<>();
-                suggestion.put("user", potentialFriend);
-                suggestion.put("mutualFriends", mutualFriends);
-                suggestion.put("mutualCount", mutualFriends.size());
-                suggestions.add(suggestion);
+            List<Map<String,Object>> mutualMaps = new ArrayList<>();
+            for (userEntity m : mutual) {
+                Map<String,Object> mm = new HashMap<>();
+                mm.put("id",    m.getId());
+                mm.put("name",  m.getName());
+                mm.put("email", m.getEmail());
+                mutualMaps.add(mm);
             }
+
+            Map<String,Object> suggestion = new HashMap<>();
+            suggestion.put("user",         userMap);
+            suggestion.put("mutualFriends", mutualMaps);
+            suggestion.put("mutualCount",  mutualMaps.size());
+
+            suggestions.add(suggestion);
         }
 
-        suggestions.sort(Comparator.comparing(s -> -((Integer) s.get("mutualCount"))));
+        suggestions.sort((a,b) -> ((Integer)b.get("mutualCount")) - ((Integer)a.get("mutualCount")));
 
         if (limit > 0 && suggestions.size() > limit) {
-            return suggestions.subList(0, limit);
+            suggestions = suggestions.subList(0, limit);
         }
 
-        return suggestions;
+        return Response.ok(suggestions).build();
     }
 
+    
     private List<userEntity> findMutualFriends(List<userEntity> friends1, List<userEntity> friends2) {
         if (friends1.isEmpty() || friends2.isEmpty()) {
             return Collections.emptyList();

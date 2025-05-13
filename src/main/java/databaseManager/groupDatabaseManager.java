@@ -20,7 +20,6 @@ public class groupDatabaseManager implements IGroupRepository{
 	@Override
 	public void save(groupEntity grp) {
 		em.persist(grp);
-		
 	}
 	
 	@Override
@@ -31,7 +30,6 @@ public class groupDatabaseManager implements IGroupRepository{
 	      .setParameter("uid", usrId)
 	      .setParameter("gid", grpId)
 	      .executeUpdate();
-		
 	}
 	
 	@Override
@@ -42,7 +40,6 @@ public class groupDatabaseManager implements IGroupRepository{
 	      .setParameter("uid", usrId)
 	      .setParameter("gid", grpId)
 	      .executeUpdate();
-		
 	}
 
 	@Override
@@ -62,7 +59,6 @@ public class groupDatabaseManager implements IGroupRepository{
 	      .setParameter("authorId",  authorId)
 	      .setParameter("groupId",   grpId)
 	      .executeUpdate();
-		
 	}
 
 	@Override
@@ -103,15 +99,49 @@ public class groupDatabaseManager implements IGroupRepository{
 
 	@Override
 	public int deleteGroup(int grpId) {
-	    groupEntity g = em.find(groupEntity.class, grpId);
-	    if (g == null) {
+	    try {
+	    	
+	    	em.createNativeQuery(
+	                "DELETE FROM likes " +
+	                "WHERE post_id IN (" +
+	                "    SELECT postId FROM posts WHERE group_id = :grpId" +
+	                ")")
+	              .setParameter("grpId", grpId)
+	              .executeUpdate();
+
+	        em.createNativeQuery(
+	                "DELETE FROM comments " +
+	                "WHERE post_id IN (" +
+	                "    SELECT postId FROM posts WHERE group_id = :grpId" +
+	                ")")
+	              .setParameter("grpId", grpId)
+	              .executeUpdate();
+	     
+	        em.createNativeQuery("DELETE FROM posts WHERE group_id = :grpId")
+	          .setParameter("grpId", grpId)
+	          .executeUpdate();
+	        
+	     
+	        em.createNativeQuery("DELETE FROM requests WHERE group_id = :grpId")
+	          .setParameter("grpId", grpId)
+	          .executeUpdate();
+	        
+	        em.createNativeQuery("DELETE FROM user_groups WHERE group_id = :grpId")
+	          .setParameter("grpId", grpId)
+	          .executeUpdate();
+	        
+	        int result = em.createNativeQuery("DELETE FROM groups WHERE group_id = :grpId")
+	                      .setParameter("grpId", grpId)
+	                      .executeUpdate();
+	        
+	        em.flush();
+	        em.clear();
+	        
+	        return result > 0 ? 1 : 0;
+	    } catch (Exception e) {
+	        e.printStackTrace();
 	        return 0;
 	    }
-
-	    g.getAllUsrInGrp().clear();
-
-	    em.remove(g);
-	    return 1;
 	}
 
 	@Override
@@ -123,26 +153,5 @@ public class groupDatabaseManager implements IGroupRepository{
 	public groupEntity getGroupById(int grpId) {
 		return em.createQuery("SELECT g FROM groupEntity g WHERE g.groupId = :id", groupEntity.class).setParameter("id", grpId).getSingleResult();
 	}
-
-	@Override
-	public void removeAllGroupMembers(int grpId) {
-		 em.createNativeQuery(
-			        "DELETE FROM user_groups WHERE group_id = :grpId"
-			    )
-			    .setParameter("grpId", grpId)
-			    .executeUpdate();
-		
-	}
-
-	@Override
-	public void deleteAllGroupPosts(int grpId) {
-		em.createQuery(
-	            "DELETE FROM postEntity p WHERE p.group.groupId = :grpId"
-	        )
-	        .setParameter("grpId", grpId)
-	        .executeUpdate();
-		
-	}
-
 
 }

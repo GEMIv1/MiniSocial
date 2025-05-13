@@ -19,6 +19,4 @@ public interface IGroupRepository {
 	public int deleteGroup(int grpId);
 	public boolean getStatus(int grpId);
 	public groupEntity getGroupById(int grpId);
-	public void removeAllGroupMembers(int grpId);
-	public void deleteAllGroupPosts(int grpId);
 }

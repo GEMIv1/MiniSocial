@@ -17,11 +17,11 @@ public class commentEntity {
     @Column(nullable = false)
     private String content;
     
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "author_id", nullable = false)
     private userEntity author;
     
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "post_id", nullable = false)
     private postEntity post;
     

@@ -34,11 +34,13 @@ public class notificationLikePostProducer extends notificationProducer {
 		try (JMSContext ctx = context()) {
 			
         	MapMessage msg = ctx.createMapMessage();
-
+        	
+        	int groupId = (grpId != null) ? grpId : -1;
+        	
         	msg.setInt   ("recipientUserId", recipientUserId);
             msg.setInt   ("actorUserId",      actorId);
             msg.setInt   ("postId",           postId);
-            msg.setInt("grpId", grpId);
+            msg.setInt("grpId", groupId);
             msg.setString("type",             NotificationType.POST_LIKE.name());
 
 

@@ -80,13 +80,19 @@ public class userController {
    	@GET
    	@Path("/getAllNotifications")
    	public Response getAllNotifications() {
-   		return Response.ok(UserInfoService.getAllNotifications(servletRequest)).build();
+   		return UserInfoService.getAllNotifications(servletRequest);
    	}
    	
    	@GET
    	@Path("/getFriendSuggestions/{limit}")
-   	public List<Map<String, Object>> getFriendSuggestions(@PathParam("limit") int limit) {
+   	public Response getFriendSuggestions(@PathParam("limit") int limit) {
    		return searchService.getFriendSuggestions(servletRequest, limit);
+   	}
+   	
+   	@GET
+   	@Path("/search")
+   	public Response getSearchResult(@QueryParam("searchTerm") String searchTerm,@QueryParam("limit") int limit) {
+   		return searchService.searchUsers(searchTerm, servletRequest, limit);
    	}
    	
    	

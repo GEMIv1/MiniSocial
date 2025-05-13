@@ -1,5 +1,6 @@
 package user.services;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,10 +13,14 @@ import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
+import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.StreamingOutput;
 
 import notifications.entity.notificationEntity;
 import notifications.interfaces.repository.INotificationRepository;
@@ -80,7 +85,6 @@ public class userService implements IUserService{
 
 	}
 
-	//If works split it
 	@Override
 	public Response viewConnections(HttpServletRequest servlet) {
 		
@@ -109,65 +113,67 @@ public class userService implements IUserService{
 
 	@Override
 	public Response getAllNotifications(HttpServletRequest servlet) {
-		HttpSession session = servlet.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                           .entity("User not authenticated.")
-                           .build();
+	    HttpSession session = servlet.getSession(false);
+	    if (session == null || session.getAttribute("userId") == null) {
+	        return Response.status(Response.Status.UNAUTHORIZED)
+	                       .entity("User not authenticated.")
+	                       .build();
+	    }
+	    int userId = (Integer) session.getAttribute("userId");
+	    List<notificationEntity> notifications = userDatabaseManager.getNotificationsForUser(userId);
+	    
+	    for (notificationEntity n : notifications) {
+            if (!n.isRead()) {
+                n.setRead(true);
+                notificationDatabaseManager.save(n);;
+            }
         }
 
-        int userId = (Integer) session.getAttribute("userId");
-        
-        
-        List<notificationEntity> notifications = userDatabaseManager.getNotificationsForUser(userId);
+	    StringWriter sw = new StringWriter();
+	    try (JsonGenerator gen = Json.createGenerator(sw)) {
+	        gen.writeStartObject()
+	           .write("count", notifications.size())
+	           .writeStartArray("notifications");
+	        for (notificationEntity n : notifications) {
+	            gen.writeStartObject()
+	               .write("id",        n.getNotificationId())
+	               .write("actorId",   n.getActorUser().getId())
+	               .write("actorName", n.getActorUser().getName())
+	               .write("type",      n.getType().name())
+	               .write("createdAt", n.getCreatedAt().toString())
+	               .write("read",      n.isRead())
+	             .writeEnd();
+	            n.setRead(true);
+	        }
+	        gen.writeEnd() 
+	           .writeEnd();
+	    }
 
-        List<Map<String,Object>> list = new ArrayList<>();
-        for (notificationEntity n : notifications) {
-             Map<String,Object> m = new HashMap<>();
-              m.put("id",        n.getNotificationId());
-              m.put("user", n.getActorUser());
-              m.put("message Type",   n.getType().name());
-              m.put("createdAt", n.getCreatedAt());
-              m.put("read",      n.isRead());
-              list.add(m);
-         }
-
-         Map<String,Object> res = new HashMap<>();
-         res.put("count",         list.size());
-         res.put("notifications", list);
-         
-         for(notificationEntity n: notifications) {
-        	 n.setRead(true);
-         }
-         
-         return Response.ok(res).build();
-
+	    return Response.ok(sw.toString()).build();
 	}
 	
+	// works split it
 	@Override
 	public Response deleteUsr(HttpServletRequest servlet, int targetId) {
-        HttpSession session = servlet.getSession(false);
-        
-        if(session == null || session.getAttribute("userId") == null) {
-        	 return Response.status(Response.Status.UNAUTHORIZED).entity("Invalid.").build();
-        }
-        
-        int loggedInId = (Integer) session.getAttribute("userId");
+	    HttpSession session = servlet.getSession(false);
 
-        
-        if(loggedInId == targetId || userDatabaseManager.findById(loggedInId).getRole() == Role.ADMIN) {
-        	
-        	userEntity toDelete = userDatabaseManager.findById(targetId);;
-            if (toDelete == null) {
-                return Response.status(Response.Status.FORBIDDEN).entity("You’re not allowed to update this user.").build();
-            }
-            
-            userDatabaseManager.delete(targetId);
-        	
-        }
-        
-    	return Response.status(Response.Status.ACCEPTED).entity("User deleted successfully.").build();
+	    if(session == null || session.getAttribute("userId") == null) {
+	        return Response.status(Response.Status.UNAUTHORIZED).entity("Invalid.").build();
+	    }
 
+	    int loggedInId = (Integer) session.getAttribute("userId");
+
+	    if(loggedInId == targetId || userDatabaseManager.findById(loggedInId).getRole() == Role.ADMIN) {
+	        userEntity toDelete = userDatabaseManager.findById(targetId);
+	        if (toDelete == null) {
+	            return Response.status(Response.Status.FORBIDDEN).entity("There is no user with this id").build();
+	        }
+
+	        userDatabaseManager.delete(targetId);
+	        return Response.status(Response.Status.ACCEPTED).entity("User deleted successfully.").build();
+	    }
+
+	    return Response.status(Response.Status.BAD_REQUEST).entity("Error while deleting the user").build();
 	}
 	
 

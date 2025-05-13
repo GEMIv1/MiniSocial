@@ -34,10 +34,11 @@ public class notificationCommentPostProducer extends notificationProducer{
 		try (JMSContext ctx = context()) {
 					
 		        	MapMessage msg = ctx.createMapMessage();
-		        	
+		        	int groupId = (grpId != null) ? grpId : -1;
+
 		        	msg.setInt("recipientUserId", recipientUserId);
 		            msg.setInt   ("actorUserId",      actorId);
-		            msg.setInt("grpId", grpId);
+		            msg.setInt("grpId", groupId);
 		            msg.setInt   ("postId",           postId);
 		            msg.setString("type",   NotificationType.POST_COMMENT.name());
 		

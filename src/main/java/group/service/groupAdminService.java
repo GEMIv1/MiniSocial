@@ -139,47 +139,45 @@ public class groupAdminService implements IGroupAdminService {
 
 	@Override
 	public Response deleteGrp(int grpId, HttpServletRequest req) {
-		try {
-			HttpSession session = req.getSession(false);
-		    if (session == null || session.getAttribute("userId") == null) {
-		        return Response.status(Response.Status.UNAUTHORIZED)
-		                      .entity("User not authenticated.").build();
-		    }
-		    
-		    int userId = (Integer) session.getAttribute("userId");
-		    userEntity user = userDatabaseManager.findById(userId);
-		    
-		    if (user == null ) {
-		        return Response.status(Response.Status.NOT_FOUND)
-		                      .entity("User not found.").build();
-		    }
-		    
-		    userEntity author = groupDatabaseManager.getAuthor(grpId);
-		    if (author == null) {
+	    try {
+	        HttpSession session = req.getSession(false);
+	        if (session == null || session.getAttribute("userId") == null) {
+	            return Response.status(Response.Status.UNAUTHORIZED)
+	                   .entity("User not authenticated.").build();
+	        }
+
+	        int userId = (Integer) session.getAttribute("userId");
+	        userEntity user = userDatabaseManager.findById(userId);
+
+	        if (user == null) {
 	            return Response.status(Response.Status.NOT_FOUND)
-	                           .entity("Group not found or author is null.").build();
+	                   .entity("User not found.").build();
 	        }
-		    if (author.getId() == userId || user.getRole() == Role.ADMIN) {
-		    	groupDatabaseManager.removeAllGroupMembers(grpId);
-		        groupDatabaseManager.deleteAllGroupPosts(grpId);
-			    int rows = groupDatabaseManager.deleteGroup(grpId);
 
-			    if (rows == 0) {
-			        return Response.status(Response.Status.NOT_FOUND).entity("").build();
-			    }
-				return Response.ok().entity("Group deleted successfully!!").build();
-
+	        userEntity author = groupDatabaseManager.getAuthor(grpId);
+	        if (author == null) {
+	            return Response.status(Response.Status.NOT_FOUND)
+	                   .entity("Group not found or author is null.").build();
 	        }
-		   
 	        
+	        if (author.getId() == userId || user.getRole() == Role.ADMIN) {
+	            // Use the direct SQL approach - handles everything in one method
+	            int result = groupDatabaseManager.deleteGroup(grpId);
 
-			
-		}
-		catch(Exception e) {
-			return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Error while deleting the group").build();
-		}
-		return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("You are not the group admin.").build();
+	            if (result == 0) {
+	                return Response.status(Response.Status.NOT_FOUND).entity("Group not found").build();
+	            }
+	            return Response.ok().entity("Group deleted successfully!!").build();
+	        }
+	        
+	        return Response.status(Response.Status.UNAUTHORIZED)
+	               .entity("You are not the group admin.").build();
+	    }
+	    catch(Exception e) {
+	        e.printStackTrace(); // Log the full stack trace
+	        return Response.status(Response.Status.NOT_ACCEPTABLE)
+	               .entity("Error while deleting the group: " + e.getMessage()).build();
+	    }
 	}
 
 
@@ -257,7 +255,12 @@ public class groupAdminService implements IGroupAdminService {
 	    	return Response.status(Response.Status.NOT_FOUND).entity("There is no pending requests by this user.").build();
 	    }
 
-	
+	    int updated = requestDatabaseManager.updateReqAccepted(usrId, grpId);
+	    if(updated == 0) {
+	    	return Response.status(Response.Status.BAD_GATEWAY).entity("Failed to update request status to APPROVED").build();
+	    }
+	    
+	    groupDatabaseManager.addUserInGrp(usrId, grpId);
 
 	    return Response.ok().entity("User " + toAccept.getName() + " has been accepted into " + group.getName()).build();
 	}

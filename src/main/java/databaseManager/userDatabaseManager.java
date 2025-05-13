@@ -7,12 +7,17 @@ import java.util.List;
 import javax.ejb.Stateless;
 import javax.management.Query;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityNotFoundException;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
 import group.entity.groupEntity;
+import group.entity.requestEntity;
 import notifications.entity.notificationEntity;
+import post.entity.commentEntity;
+import post.entity.likeEntity;
+import post.entity.postEntity;
 import user.entity.friendRequestEntity;
 import user.entity.userEntity;
 import user.interfaces.repositories.IuserRepository;
@@ -63,42 +68,63 @@ public class userDatabaseManager implements IuserRepository {
 	public void delete(int userId) {
 	    userEntity user = em.find(userEntity.class, userId);
 	    if (user == null) {
-	        return;
+	        throw new EntityNotFoundException("User with ID " + userId + " not found");
 	    }
 	    
-	    List<userEntity> friendsList = new ArrayList<>(user.getFriends());
-	    for (userEntity friend : friendsList) {
+	    for (userEntity friend : user.getFriendOf()) {
 	        friend.getFriends().remove(user);
-	        user.getFriends().remove(friend);
+	        em.merge(friend);
 	    }
 	    
-	    for (groupEntity group : new ArrayList<>(user.getGroups())) {
-	        group.getAllUsrInGrp().remove(user);
-	        user.getGroups().remove(group);
+	    user.getFriends().clear();
+	    em.merge(user);
+	    
+	    List<friendRequestEntity> sentRequestsToDelete = new ArrayList<>(user.getfriendRequestSent());
+	    for (friendRequestEntity req : sentRequestsToDelete) {
+	        em.remove(req);
 	    }
 	    
-	    TypedQuery<groupEntity> query = em.createQuery(
-	        "SELECT g FROM groupEntity g WHERE g.creator = :user", groupEntity.class);
-	    query.setParameter("user", user);
-	    List<groupEntity> createdGroups = query.getResultList();
+	    List<friendRequestEntity> receivedRequestsToDelete = new ArrayList<>(user.getFriendRequestRecieved());
+	    for (friendRequestEntity req : receivedRequestsToDelete) {
+	        em.remove(req);
+	    }
 	    
-	    for (groupEntity createdGroup : createdGroups) {
-	        List<userEntity> groupUsers = createdGroup.getAllUsrInGrp();
-	        boolean foundNewCreator = false;
+	    List<postEntity> postsToDelete = new ArrayList<>(user.getPosts());
+	    for (postEntity post : postsToDelete) {
+	        em.remove(post);
+	    }
+	    
+	    List<commentEntity> commentsToDelete = new ArrayList<>(user.getComments());
+	    for (commentEntity comment : commentsToDelete) {
+	        em.remove(comment);
+	    }
+	    
+	    List<likeEntity> likesToDelete = new ArrayList<>(user.getLikes());
+	    for (likeEntity like : likesToDelete) {
+	        em.remove(like);
+	    }
+	    
+	    List<notificationEntity> receivedNotifications = new ArrayList<>(user.getNotificationReceived());
+	    for (notificationEntity notification : receivedNotifications) {
+	        em.remove(notification);
+	    }
+	    
+	    List<notificationEntity> sentNotifications = new ArrayList<>(user.getNotificationSent());
+	    for (notificationEntity notification : sentNotifications) {
+	        em.remove(notification);
+	    }
+	    
+	    List<groupEntity> groupsToDelete = new ArrayList<>(user.getGroupsCreated());
+	    for (groupEntity group : groupsToDelete) {
+	        group.getAllUsrInGrp().clear();
+	        em.merge(group);
 	        
-	        if (!groupUsers.isEmpty()) {
-	            for (userEntity member : groupUsers) {
-	                if (!member.equals(user)) {
-	                    createdGroup.setCreator(member);
-	                    foundNewCreator = true;
-	                    break;
-	                }
-	            }
-	        }
-	        
-	        if (!foundNewCreator) {
-	            em.remove(createdGroup);
-	        }
+	        em.remove(group);
+	    }
+	    
+	    List<requestEntity> requestsToDelete = new ArrayList<>(user.getRequests());
+	    for (requestEntity request : requestsToDelete) {
+	        em.remove(request);
 	    }
 	    
 	    em.remove(user);
@@ -163,18 +189,20 @@ public class userDatabaseManager implements IuserRepository {
 	
 	@Override
 	public List<userEntity> searchUsers(String searchTerm, int currentUserId) {
-        String formattedSearchTerm = "%" + searchTerm.toLowerCase() + "%";
-        
-        TypedQuery<userEntity> query = em.createQuery(
-            "SELECT u FROM UserEntity u WHERE u.userId != :currentUserId " +
-            "AND (LOWER(u.name) LIKE :searchTerm OR LOWER(u.email) LIKE :searchTerm) " +
-            "ORDER BY u.name ASC", 
-            userEntity.class);
-        
-        query.setParameter("currentUserId", currentUserId);
-        query.setParameter("searchTerm", formattedSearchTerm);
-        
-        return query.getResultList();
+		String like = "%" + searchTerm + "%";
+
+	    return em.createQuery(
+	            "SELECT DISTINCT u                               \n" +
+	             "  FROM userEntity u                             \n" +
+	             "  LEFT JOIN FETCH u.friends                     \n" +
+	             " WHERE u.userId != :currentUserId               \n" +
+	             "   AND (LOWER(u.name)  LIKE :like               \n" +
+	             "     OR LOWER(u.email) LIKE :like)              \n" +
+	             " ORDER BY u.name ASC", 
+	                    userEntity.class)
+	                  .setParameter("currentUserId", currentUserId)
+	                  .setParameter("like", like)
+	                  .getResultList();
     }
 	
 	@Override
